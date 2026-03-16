@@ -1,0 +1,8 @@
+{
+  "_TALIMAT": "Firebase Console'dan google-services.json indirin ve bu dosyayı silin",
+  "_ADIMLAR": [
+    "1. https://console.firebase.google.com gidin",
+    "2. Android app ekleyin — package: com.example.sehir_ses",
+    "3. google-services.json indirin, buraya (android/app/) koyun"
+  ]
+}

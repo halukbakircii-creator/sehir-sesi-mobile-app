@@ -1,0 +1,46 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Ortam değişkenleri — ASLA git'e ekleme!
+.env
+*.env
+!.env.example
+
+# Firebase config — git'e ekleme, CI/CD'de inject et
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# macOS
+.DS_Store
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Android
+android/local.properties
+android/.gradle
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/gradle/
+
+# iOS
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/Flutter/flutter_export_environment.sh
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+ios/Pods/

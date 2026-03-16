@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ŞehirSes — Belediye Admin Paneli</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #1A3A5C;
+      --secondary: #2196F3;
+      --accent: #00BCD4;
+      --green: #2ECC71;
+      --yellow: #F39C12;
+      --red: #E74C3C;
+      --gray: #95A5A6;
+      --bg: #0D1B2A;
+      --surface: #162032;
+      --card: #1E2D42;
+      --border: rgba(255,255,255,0.08);
+      --text: #E8EDF4;
+      --text-muted: #7A8BA0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px; border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo h1 { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: 10px; cursor: pointer;
+      color: var(--text-muted); font-size: 14px; font-weight: 500;
+      transition: all 0.2s; margin-bottom: 4px;
+    }
+    .nav-item:hover, .nav-item.active {
+      background: rgba(33,150,243,0.12); color: var(--secondary);
+    }
+    .nav-icon { font-size: 18px; width: 22px; text-align: center; }
+
+    /* Main */
+    .main { margin-left: 240px; padding: 28px; min-height: 100vh; }
+
+    /* Header */
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;
+    }
+    .page-title { font-size: 26px; font-weight: 800; }
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(46,204,113,0.15); color: var(--green);
+      padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      border: 1px solid rgba(46,204,113,0.3);
+    }
+    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* Stat Cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--card); border-radius: 16px; padding: 20px;
+      border: 1px solid var(--border); position: relative; overflow: hidden;
+    }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .stat-card.green::before { background: var(--green); }
+    .stat-card.yellow::before { background: var(--yellow); }
+    .stat-card.red::before { background: var(--red); }
+    .stat-card.blue::before { background: var(--secondary); }
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+    .stat-value { font-size: 36px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); }
+
+    /* Charts grid */
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
+    .chart-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+    /* District table */
+    .table-card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; }
+    td { padding: 12px; font-size: 14px; border-top: 1px solid var(--border); }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .badge-green { background: rgba(46,204,113,0.15); color: var(--green); }
+    .badge-yellow { background: rgba(243,156,18,0.15); color: var(--yellow); }
+    .badge-red { background: rgba(231,76,60,0.15); color: var(--red); }
+
+    /* Score bar */
+    .score-bar { display: flex; align-items: center; gap: 10px; }
+    .bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+
+    /* Feed */
+    .feed-card { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
+    .feed-item {
+      padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.04);
+      margin-bottom: 8px; display: flex; gap: 12px; align-items: flex-start;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+    .feed-avatar { width: 36px; height: 36px; border-radius: 10px; display:flex; align-items:center; justify-content:center; font-size: 18px; flex-shrink: 0; }
+    .feed-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .urgency-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+
+    /* AI Report section */
+    .ai-section { background: var(--card); border-radius: 16px; padding: 24px; border: 1px solid var(--border); }
+    .ai-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .ai-report-content { font-size: 14px; line-height: 1.8; color: #C8D5E0; white-space: pre-wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer;
+      font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; transition: all 0.2s;
+    }
+    .btn-primary { background: var(--secondary); color: white; }
+    .btn-primary:hover { background: #1976D2; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>🏙️ ŞehirSes</h1>
+    <span>Belediye Admin Paneli</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('map')">
+      <span class="nav-icon">🗺️</span> Memnuniyet Haritası
+    </div>
+    <div class="nav-item" onclick="showPage('feedbacks')">
+      <span class="nav-icon">💬</span> Geri Bildirimler
+      <span id="badge-count" style="margin-left:auto;background:var(--red);color:white;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700"></span>
+    </div>
+    <div class="nav-item" onclick="showPage('reports')">
+      <span class="nav-icon">🤖</span> AI Raporları
+    </div>
+    <div class="nav-item" onclick="showPage('settings')">
+      <span class="nav-icon">⚙️</span> Ayarlar
+    </div>
+  </div>
+  <div style="padding:16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)">
+    <div style="font-weight:600;color:var(--text)">Gaziantep BB</div>
+    <div>belediye@gaziantep.bel.tr</div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">Genel Bakış</div>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:4px" id="last-update">Son güncelleme: yükleniyor...</div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        Canlı Veri
+      </div>
+      <button class="btn btn-primary" onclick="generateReport()">
+        🤖 AI Raporu Oluştur
+      </button>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-label">Genel İl Skoru</div>
+      <div class="stat-value" id="overall-score">—</div>
+      <div class="stat-sub" id="overall-level">Hesaplanıyor...</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Toplam Geri Bildirim</div>
+      <div class="stat-value" id="total-feedbacks">—</div>
+      <div class="stat-sub">Tüm mahallelerde</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">Aktif Mahalle</div>
+      <div class="stat-value" id="neighborhood-count">—</div>
+      <div class="stat-sub">Veri olan mahalleler</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Kritik Mahalle</div>
+      <div class="stat-value" id="critical-count">—</div>
+      <div class="stat-sub">%40 altı memnuniyet</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">📈 İlçe Bazlı Memnuniyet</div>
+      <canvas id="districtChart" height="80"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📊 Kategori Dağılımı</div>
+      <canvas id="categoryChart" height="170"></canvas>
+    </div>
+  </div>
+
+  <!-- District Table + Live Feed -->
+  <div style="display:grid;grid-template-columns:1fr 350px;gap:16px;margin-bottom:24px">
+    <!-- District ranking -->
+    <div class="table-card">
+      <div class="chart-title">🏆 Mahalle Sıralaması — Şahinbey</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Mahalle</th>
+            <th>Skor</th>
+            <th>Geri Bildirim</th>
+            <th>Durum</th>
+          </tr>
+        </thead>
+        <tbody id="neighborhood-table">
+          <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px">Yükleniyor...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Live feed -->
+    <div class="feed-card">
+      <div class="chart-title">⚡ Canlı Geri Bildirimler</div>
+      <div id="live-feed"></div>
+    </div>
+  </div>
+
+  <!-- AI Report -->
+  <div class="ai-section">
+    <div class="ai-header">
+      <div style="font-size:32px">🤖</div>
+      <div>
+        <div style="font-size:17px;font-weight:700">AI Yönetici Raporu</div>
+        <div style="font-size:12px;color:var(--text-muted)">Claude AI ile otomatik oluşturulur</div>
+      </div>
+    </div>
+    <div id="ai-report-content" class="ai-report-content" style="color:var(--text-muted)">
+      Rapor oluşturmak için yukarıdaki "AI Raporu Oluştur" butonuna tıklayın.
+    </div>
+  </div>
+</main>
+
+<script>
+// ─── CONFIG (Gerçek projeye Supabase değerlerini ekle) ─────────
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+// Demo mod (Supabase yokken)
+const DEMO_MODE = true;
+
+// Demo veri
+const DEMO_NEIGHBORHOODS = [
+  { neighborhood: 'Gazikent',    district: 'Şahinbey', overall_score: 84.1, total_feedbacks: 210, score_cleaning:88, score_road:82, score_security:90, score_park:79, score_transport:83, score_social:85 },
+  { neighborhood: 'Sultanbey',   district: 'Şahinbey', overall_score: 79.2, total_feedbacks: 167, score_cleaning:82, score_road:76, score_security:85, score_park:74, score_transport:80, score_social:80 },
+  { neighborhood: 'Mücahitler',  district: 'Şahinbey', overall_score: 77.4, total_feedbacks: 189, score_cleaning:80, score_road:74, score_security:82, score_park:72, score_transport:78, score_social:79 },
+  { neighborhood: 'Akkent',      district: 'Şahinbey', overall_score: 72.5, total_feedbacks: 143, score_cleaning:75, score_road:65, score_security:80, score_park:68, score_transport:70, score_social:77 },
+  { neighborhood: 'Karataş',     district: 'Şahinbey', overall_score: 66.8, total_feedbacks: 112, score_cleaning:70, score_road:60, score_security:72, score_park:65, score_transport:67, score_social:68 },
+  { neighborhood: 'Sakarya',     district: 'Şahinbey', overall_score: 62.9, total_feedbacks: 88,  score_cleaning:65, score_road:58, score_security:68, score_park:60, score_transport:63, score_social:63 },
+  { neighborhood: 'Bağlarbaşı',  district: 'Şahinbey', overall_score: 58.3, total_feedbacks: 98,  score_cleaning:60, score_road:52, score_security:65, score_park:55, score_transport:58, score_social:60 },
+  { neighborhood: 'Törehan',     district: 'Şahinbey', overall_score: 51.7, total_feedbacks: 72,  score_cleaning:54, score_road:46, score_security:58, score_park:49, score_transport:52, score_social:51 },
+  { neighborhood: 'İncilipınar', district: 'Şahinbey', overall_score: 41.2, total_feedbacks: 67,  score_cleaning:45, score_road:35, score_security:48, score_park:38, score_transport:42, score_social:39 },
+  { neighborhood: 'Onur',        district: 'Şahinbey', overall_score: 35.6, total_feedbacks: 54,  score_cleaning:38, score_road:30, score_security:40, score_park:33, score_transport:36, score_social:35 },
+];
+
+const DEMO_FEEDS = [
+  { category: 'road', text: 'Akkent Caddesi 3. sokakta derin bir çukur var.', urgency: 'high', neighborhood: 'Akkent', rating: 2 },
+  { category: 'cleaning', text: 'Gazikent parkı çok temiz tutulmuş, teşekkürler.', urgency: 'low', neighborhood: 'Gazikent', rating: 5 },
+  { category: 'park', text: 'İncilipınar mahallesinde park yok, çocuklar oyun oynayamıyor.', urgency: 'medium', neighborhood: 'İncilipınar', rating: 2 },
+  { category: 'security', text: 'Onur mahallesinde aydınlatma yetersiz.', urgency: 'high', neighborhood: 'Onur', rating: 1 },
+  { category: 'transport', text: 'Sultanbey otobüs seferleri iyi düzenlenmiş.', urgency: 'low', neighborhood: 'Sultanbey', rating: 4 },
+];
+
+const CATEGORY_ICONS = {
+  cleaning:'🧹', road:'🚧', security:'🛡️', park:'🌳', transport:'🚌', social:'👥'
+};
+
+// ─── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadDashboard();
+  startLiveFeed();
+  document.getElementById('last-update').textContent =
+    'Son güncelleme: ' + new Date().toLocaleTimeString('tr-TR');
+});
+
+function loadDashboard() {
+  const data = DEMO_NEIGHBORHOODS;
+  const total = data.reduce((s, n) => s + n.total_feedbacks, 0);
+  const avg = data.reduce((s, n) => s + n.overall_score, 0) / data.length;
+  const critical = data.filter(n => n.overall_score < 40).length;
+
+  document.getElementById('overall-score').textContent = `%${avg.toFixed(1)}`;
+  document.getElementById('overall-level').textContent =
+    avg >= 70 ? '😊 Genel Olarak Memnun' : avg >= 40 ? '😐 Orta Seviye' : '😞 İyileştirme Gerekli';
+  document.getElementById('total-feedbacks').textContent = total.toLocaleString('tr-TR');
+  document.getElementById('neighborhood-count').textContent = data.length;
+  document.getElementById('critical-count').textContent = critical;
+  if (critical > 0) document.getElementById('badge-count').textContent = critical;
+
+  renderNeighborhoodTable(data);
+  renderDistrictChart(data);
+  renderCategoryChart(data);
+}
+
+function getScoreColor(score) {
+  if (score >= 70) return '#2ECC71';
+  if (score >= 40) return '#F39C12';
+  return '#E74C3C';
+}
+
+function getScoreBadge(score) {
+  if (score >= 70) return `<span class="badge badge-green">😊 Memnun</span>`;
+  if (score >= 40) return `<span class="badge badge-yellow">😐 Orta</span>`;
+  return `<span class="badge badge-red">😞 Kötü</span>`;
+}
+
+function renderNeighborhoodTable(data) {
+  const sorted = [...data].sort((a, b) => b.overall_score - a.overall_score);
+  const tbody = document.getElementById('neighborhood-table');
+  tbody.innerHTML = sorted.map((n, i) => `
+    <tr>
+      <td style="color:var(--text-muted);font-weight:700">${i + 1}</td>
+      <td style="font-weight:600">${n.neighborhood}</td>
+      <td>
+        <div class="score-bar">
+          <span style="font-weight:800;color:${getScoreColor(n.overall_score)};min-width:44px">%${n.overall_score.toFixed(0)}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${n.overall_score}%;background:${getScoreColor(n.overall_score)}"></div>
+          </div>
+        </div>
+      </td>
+      <td style="color:var(--text-muted)">${n.total_feedbacks}</td>
+      <td>${getScoreBadge(n.overall_score)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderDistrictChart(data) {
+  const sorted = [...data].sort((a, b) => b.overall_score - a.overall_score);
+  const ctx = document.getElementById('districtChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sorted.map(n => n.neighborhood),
+      datasets: [{
+        data: sorted.map(n => n.overall_score),
+        backgroundColor: sorted.map(n => getScoreColor(n.overall_score) + 'CC'),
+        borderColor: sorted.map(n => getScoreColor(n.overall_score)),
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true, max: 100,
+          ticks: { color: '#7A8BA0', callback: v => `%${v}` },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
+        x: { ticks: { color: '#7A8BA0', maxRotation: 45 }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderCategoryChart(data) {
+  const cats = ['cleaning','road','security','park','transport','social'];
+  const labels = ['Temizlik','Yol','Güvenlik','Park','Ulaşım','Sosyal'];
+  const avgs = cats.map(c =>
+    (data.reduce((s, n) => s + n[`score_${c}`], 0) / data.length).toFixed(1)
+  );
+
+  const ctx = document.getElementById('categoryChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: avgs,
+        backgroundColor: ['#27AE60','#E67E22','#E74C3C','#2ECC71','#3498DB','#9B59B6'],
+        borderWidth: 0,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#7A8BA0', font: { size: 11 }, padding: 12, boxWidth: 12 }
+        }
+      }
+    }
+  });
+}
+
+// Canlı feed simülasyonu
+let feedIndex = 0;
+function startLiveFeed() {
+  addFeedItem(DEMO_FEEDS[feedIndex % DEMO_FEEDS.length]);
+  feedIndex++;
+  setInterval(() => {
+    addFeedItem(DEMO_FEEDS[feedIndex % DEMO_FEEDS.length]);
+    feedIndex++;
+  }, 8000);
+}
+
+function addFeedItem(item) {
+  const feed = document.getElementById('live-feed');
+  const colors = { high: '#E74C3C', medium: '#F39C12', low: '#2ECC71' };
+  const catColors = { road:'#E67E22', cleaning:'#27AE60', security:'#E74C3C', park:'#2ECC71', transport:'#3498DB', social:'#9B59B6' };
+
+  const div = document.createElement('div');
+  div.className = 'feed-item';
+  div.innerHTML = `
+    <div class="feed-avatar" style="background:${catColors[item.category]}22;color:${catColors[item.category]}">
+      ${CATEGORY_ICONS[item.category]}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;line-height:1.4;color:var(--text)">${item.text}</div>
+      <div class="feed-meta">${item.neighborhood} · Şimdi · ⭐${item.rating}</div>
+    </div>
+    <div class="urgency-dot" style="background:${colors[item.urgency]}" title="${item.urgency}"></div>
+  `;
+
+  feed.insertBefore(div, feed.firstChild);
+  // Max 8 item
+  while (feed.children.length > 8) feed.removeChild(feed.lastChild);
+}
+
+// AI Rapor
+async function generateReport() {
+  const btn = event.target;
+  const content = document.getElementById('ai-report-content');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Rapor hazırlanıyor...';
+  content.textContent = 'AI analiz ediyor...';
+  content.style.color = 'var(--text-muted)';
+
+  // Demo: Supabase yokken simüle et
+  await new Promise(r => setTimeout(r, 2500));
+
+  const data = DEMO_NEIGHBORHOODS;
+  const avg = data.reduce((s, n) => s + n.overall_score, 0) / data.length;
+  const critical = data.filter(n => n.overall_score < 40);
+  const best = [...data].sort((a, b) => b.overall_score - a.overall_score)[0];
+
+  content.style.color = '#C8D5E0';
+  content.textContent = `📋 GAZİANTEP BÜYÜKŞEHİR BELEDİYESİ
+Vatandaş Memnuniyet Yönetici Özeti
+Oluşturma Tarihi: ${new Date().toLocaleDateString('tr-TR')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. YÖNETİCİ ÖZETİ
+Şahinbey ilçesindeki ${data.length} mahallede toplam ${data.reduce((s,n)=>s+n.total_feedbacks,0)} geri bildirim analiz edilmiştir. Genel memnuniyet skoru %${avg.toFixed(1)} ile orta-iyi seviyededir. En başarılı mahalle ${best.neighborhood} (%${best.overall_score}) iken, ${critical.length} mahallede acil iyileştirme gerekmektedir.
+
+2. ÖNCELİKLİ EYLEM PLANI
+${critical.map(n => `• ${n.neighborhood} (%${n.overall_score}): Acil müdahale gerekiyor. Özellikle yol/altyapı (%${n.score_road}) ve güvenlik (%${n.score_security}) kategorileri kritik seviyede.`).join('\n')}
+• İl genelinde park ve yeşil alan skoru (%${(data.reduce((s,n)=>s+n.score_park,0)/data.length).toFixed(0)}) düşük — yeni park yapımı önceliklendirilmeli.
+• Yol bakım-onarım çalışmalarına kaynak aktarımı önerilir.
+
+3. KAYNAK TAHSİSİ ÖNERİLERİ
+• Bütçenin %35'i kritik mahallelere (Onur, İncilipınar, Törehan) aktarılmalı.
+• Temizlik hizmetleri tutarlı, ödüllendirme yapılmalı.
+• Güvenlik kamerası ve aydınlatma yatırımı öncelik.
+
+4. 6 AYLIK HEDEFLER
+• Tüm mahalleleri %50 üzerine çıkarma
+• Kritik mahalle sayısını ${critical.length}'den 0'a indirme
+• Genel memnuniyet skorunu %75'e yükseltme
+
+5. BAŞARI KRİTERLERİ
+• Aylık geri bildirim sayısı: minimum 500
+• Kritik şikayet yanıt süresi: 48 saat
+• Vatandaş memnuniyet artışı: ayda +3 puan`;
+
+  btn.disabled = false;
+  btn.textContent = '🤖 AI Raporu Oluştur';
+}
+
+function showPage(page) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
