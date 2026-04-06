@@ -1,17 +1,101 @@
 # sehir_ses
+# 🚀 ŞehirSesi — Şehir Analitiği Platformu
 
-A new Flutter project.
+📱 Google Play:  
+https://play.google.com/store/apps/details?id=com.sehirsesi.haluk  
 
-## Getting Started
+💻 Kaynak Kod:  
+https://github.com/halukbakircii-creator/sehir-sesi-mobile-app  
 
-This project is a starting point for a Flutter application.
+---
 
-A few resources to get you started if this is your first Flutter project:
+## 📌 Proje Özeti
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+ŞehirSesi, kullanıcıların şehir ve mahalleleri  
+**güvenlik, temizlik ve sosyal yaşam gibi kriterlere göre değerlendirebildiği**  
+bir mobil şehir analitiği platformudur.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Kullanıcı geri bildirimlerini analiz ederek  
+her mahalle için dinamik skorlar üretir.
+
+---
+
+## 🧠 Problem
+
+Şehirler hakkında bilgi genelde:
+- Dağınık  
+- Yoruma dayalı  
+- Güncel olmayan  
+
+Bu durum kullanıcıların doğru karar vermesini zorlaştırır.
+
+---
+
+## 💡 Çözüm
+
+ŞehirSesi ile:
+
+- Kullanıcılar mahalleleri puanlar  
+- Veriler anlık olarak işlenir  
+- Her bölge için dinamik skorlar oluşur  
+
+Böylece şehirler **veriye dayalı şekilde analiz edilebilir hale gelir**
+
+---
+
+## ✨ Özellikler
+
+- 🏙️ Mahalle bazlı puanlama sistemi  
+- 📊 Dinamik skor hesaplama  
+- 🗺️ Harita tabanlı keşif (OpenStreetMap)  
+- ⭐ Kullanıcı yorum sistemi  
+- 🔄 Gerçek zamanlı veri güncelleme  
+
+---
+
+## 🛠️ Teknolojiler
+
+| Katman | Teknoloji |
+|------|--------|
+| Mobile | Flutter |
+| Backend | Supabase |
+| Database | PostgreSQL |
+| Map | OpenStreetMap |
+---
+
+## 🏗️ Sistem Mimarisi
+
+Kullanıcı → Flutter App → Supabase API → PostgreSQL  
+
+- Kullanıcı verileri Supabase üzerinden işlenir  
+- Veriler PostgreSQL’de tutulur  
+- UI anlık olarak güncellenir  
+
+---
+
+## 🎯 Amaç
+
+Şehirleri sadece gezilecek yerler olarak değil,  
+**veri ile ölçülebilen ve analiz edilebilen sistemler haline getirmek**
+
+---
+
+## 🚧 Gelecek Planları
+
+- 📈 Gelişmiş analiz sistemi  
+- 🤖 AI destekli yorum analizi  
+- 🌍 Daha fazla şehir entegrasyonu  
+
+---
+
+## 👨‍💻 Geliştirici
+
+**Haluk Bakırcı**  
+Bilgi Sistemleri ve Teknolojileri  
+
+---
+
+## ⭐ Not
+
+Bu proje aktif olarak geliştirilmektedir.  
+Geri bildirimler benim için çok değerli.
